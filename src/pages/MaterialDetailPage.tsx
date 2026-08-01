@@ -43,6 +43,7 @@ export function MaterialDetailPage({ id }: { id: string }) {
   const [reviews, setReviews] = useState<(Rating & { rater: { full_name: string } | null })[]>([]);
   const [reviewDraft, setReviewDraft] = useState('');
   const [submittingRating, setSubmittingRating] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -159,10 +160,21 @@ export function MaterialDetailPage({ id }: { id: string }) {
   };
 
   const handleShare = async () => {
+    if (!material) return;
     const url = `${window.location.origin}${window.location.pathname}#/material/${id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: material.title, text: `Check out "${material.title}" on StuDeck`, url });
+        return;
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') return;
+      }
+    }
     try {
       await navigator.clipboard.writeText(url);
+      setLinkCopied(true);
       showToast('success', 'Link copied to clipboard.');
+      setTimeout(() => setLinkCopied(false), 2000);
     } catch {
       showToast('error', 'Could not copy link.');
     }
@@ -353,8 +365,9 @@ export function MaterialDetailPage({ id }: { id: string }) {
                 {favorited ? <BookmarkCheck className="h-4 w-4 text-accent-500" /> : <Bookmark className="h-4 w-4" />}
                 {favorited ? 'Saved' : 'Save'}
               </button>
-              <button onClick={handleShare} className="btn-secondary">
-                <Share2 className="h-4 w-4" /> Share
+             <button onClick={handleShare} className="btn-secondary">
+                {linkCopied ? <CheckCircle2 className="h-4 w-4 text-success-600" /> : <Share2 className="h-4 w-4" />}
+                {linkCopied ? 'Copied!' : 'Share'}
               </button>
             </div>
             {!user && (

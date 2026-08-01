@@ -12,6 +12,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    // PKCE puts the recovery code in the query string (?code=...) instead of
+    // the URL hash fragment, which would otherwise collide with this app's
+    // hash-based router (#/reset-password).
+    flowType: 'pkce',
   },
 });
 

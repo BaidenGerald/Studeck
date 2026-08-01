@@ -17,6 +17,7 @@ import {
   UploadCloud, FileText, Sparkles, X, AlertCircle, CheckCircle2,
   Tag, Loader2, ArrowRight,
 } from 'lucide-react';
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50MB — matches the storage bucket's server-side limit
 
 export function UploadPage() {
   const { user, profile } = useAuth();
@@ -94,6 +95,11 @@ export function UploadPage() {
 
   const handleFileSelect = (selected: File | null) => {
     if (!selected) return;
+    if (selected.size > MAX_UPLOAD_BYTES) {
+      setError(`"${selected.name}" is ${formatBytes(selected.size)}, which is over the 50MB limit. Please choose a smaller file.`);
+      return;
+    }
+    setError(null);
     setFile(selected);
     if (!title) {
       // Auto-fill title from file name (strip extension)

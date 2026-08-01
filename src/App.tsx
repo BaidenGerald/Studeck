@@ -9,6 +9,8 @@ import { FullPageLoader } from '@/components/Spinner';
 import { LandingPage } from '@/pages/LandingPage';
 import { SignUpPage } from '@/pages/SignUpPage';
 import { SignInPage } from '@/pages/SignInPage';
+import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { BrowsePage } from '@/pages/BrowsePage';
 import { MaterialDetailPage } from '@/pages/MaterialDetailPage';
@@ -23,7 +25,8 @@ function Routes() {
   const path = route.path;
 
   // Routes that don't show the marketing chrome (auth screens)
-  const bareRoute = path === '/signin' || path === '/signup';
+  const bareRoute =
+    path === '/signin' || path === '/signup' || path === '/forgot-password' || path === '/reset-password';
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
@@ -43,6 +46,8 @@ function Routes() {
   if (bareRoute) {
     if (path === '/signin') return <SignInPage />;
     if (path === '/signup') return <SignUpPage />;
+    if (path === '/forgot-password') return <ForgotPasswordPage />;
+    if (path === '/reset-password') return <ResetPasswordPage />;
   }
 
   let page: React.ReactNode;

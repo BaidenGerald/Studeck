@@ -18,6 +18,9 @@ interface AuthContextValue {
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<{ error: string | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
+  passwordRecovery: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -27,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   async function loadProfile(userId: string) {
     const { data, error } = await supabase
@@ -55,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // onAuthStateChange — wrap async work to avoid deadlock
     const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      if (_event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
       setSession(newSession);
       setUser(newSession?.user ?? null);
       if (newSession?.user) {
@@ -112,9 +117,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) await loadProfile(user.id);
   };
 
+  const requestPasswordReset: AuthContextValue['requestPasswordReset'] = async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}${window.location.pathname}#/reset-password`,
+    });
+    if (error) return { error: error.message };
+    return { error: null };
+  };
+
+  const updatePassword: AuthContextValue['updatePassword'] = async (newPassword) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return { error: error.message };
+    setPasswordRecovery(false);
+    return { error: null };
+  };
+
   return (
     <AuthContext.Provider
-      value={{ session, user, profile, loading, signUp, signIn, signOut, refreshProfile }}
+      value={{
+        session,
+        user,
+        profile,
+        loading,
+        signUp,
+        signIn,
+        signOut,
+        refreshProfile,
+        requestPasswordReset,
+        updatePassword,
+        passwordRecovery,
+      }}
     >
       {children}
     </AuthContext.Provider>

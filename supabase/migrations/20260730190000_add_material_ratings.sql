@@ -23,6 +23,23 @@
 ALTER TABLE materials ADD COLUMN IF NOT EXISTS rating_avg numeric(3,2) NOT NULL DEFAULT 0;
 ALTER TABLE materials ADD COLUMN IF NOT EXISTS rating_count int NOT NULL DEFAULT 0;
 
+-- ============ storage: enforce upload limits server-side ============
+UPDATE storage.buckets
+SET file_size_limit = 52428800, -- 50MB, matches the client-side check in UploadPage
+    allowed_mime_types = ARRAY[
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/plain', 'text/markdown', 'text/csv',
+      'application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed',
+      'image/png', 'image/jpeg', 'image/gif', 'image/webp'
+    ]
+WHERE id = 'materials';
+
 -- ============ ratings ============
 CREATE TABLE IF NOT EXISTS ratings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

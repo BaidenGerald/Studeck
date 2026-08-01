@@ -39,7 +39,7 @@ export async function fetchAllCourses(): Promise<Course[]> {
 
 // ---- materials ----
 const MATERIAL_RELATIONS =
-  'id, title, description, type, course_id, department_id, level, uploader_id, file_path, file_name, file_type, file_size, tags, download_count, rating_avg, rating_count, created_at, course:courses(id, code, title), department:departments(id, name, code, icon), uploader:profiles!materials_uploader_id_fkey(id, full_name)';
+  'id, title, description, type, course_id, department_id, level, uploader_id, file_path, file_name, file_type, file_size, tags, download_count, rating_avg, rating_count, created_at, course:courses(id, code, title), department:departments(id, name, code, icon), uploader:profiles!materials_uploader_id_profiles_fkey(id, full_name)';
 
 export async function fetchMaterialById(id: string): Promise<MaterialWithRelations | null> {
   const { data, error } = await supabase
@@ -209,13 +209,27 @@ export async function downloadMaterialFile(material: Material): Promise<void> {
     .from(MATERIALS_BUCKET)
     .createSignedUrl(material.file_path, 60);
   if (error || !data?.signedUrl) throw error ?? new Error('Could not generate download URL');
-  // Trigger a browser download
-  const a = document.createElement('a');
-  a.href = data.signedUrl;
-  a.download = material.file_name;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+
+  // The signed URL points at Supabase's own domain, not ours. Browsers ignore
+  // the <a download> attribute for cross-origin links, so a plain <a> click
+  // would just open the file in a new tab instead of downloading it (and
+  // wouldn't respect our chosen filename). Fetching the bytes ourselves and
+  // downloading from a same-origin blob: URL avoids both problems.
+  const res = await fetch(data.signedUrl);
+  if (!res.ok) throw new Error('Failed to fetch file for download.');
+  const blob = await res.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  try {
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = material.file_name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } finally {
+    // Revoke on a delay so the browser has time to actually start the download.
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000);
+  }
 }
 
 // ---- upload ----
@@ -321,7 +335,7 @@ export async function fetchRatingsForMaterial(materialId: string, limit = 10): P
 > {
   const { data, error } = await supabase
     .from('ratings')
-    .select('*, rater:profiles!ratings_user_id_fkey(full_name)')
+    .select('*, rater:profiles!ratings_user_id_profiles_fkey(full_name)')
     .eq('material_id', materialId)
     .not('review', 'is', null)
     .order('created_at', { ascending: false })
