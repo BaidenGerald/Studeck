@@ -18,10 +18,11 @@ import {
 } from '@/lib/queries';
 import {
   formatBytes, formatRelativeTime, formatDate, getFileExtension,
-  MATERIAL_TYPE_LABELS, initials,
+  MATERIAL_TYPE_LABELS, 
 } from '@/lib/utils';
 import { getMaterialTypeIcon, getDepartmentIcon } from '@/components/icons';
 import { StarRatingDisplay, StarRatingInput } from '@/components/StarRating';
+import { Avatar } from '@/components/Avatar';
 import type { MaterialWithRelations, Rating } from '@/types/database';
 import {
   Download, Bookmark, BookmarkCheck, FileText, Calendar, HardDrive,
@@ -411,9 +412,7 @@ export function MaterialDetailPage({ id }: { id: string }) {
                 Uploaded by
               </p>
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-sm font-bold text-primary-700">
-                  {initials(material.uploader.full_name)}
-                </div>
+               <Avatar name={material.uploader.full_name} url={material.uploader.avatar_url} size="sm" />
                 <div>
                   <p className="text-sm font-semibold text-slate-800">{material.uploader.full_name}</p>
                   <p className="text-xs text-slate-500">{formatDate(material.created_at)}</p>

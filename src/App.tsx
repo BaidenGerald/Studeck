@@ -1,10 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { useRouter } from '@/lib/router';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { RequireAuth } from '@/components/RequireAuth';
 import { FullPageLoader } from '@/components/Spinner';
+import { SplashScreen, shouldShowSplash, markSplashShown } from '@/components/SplashScreen';
 
 import { LandingPage } from '@/pages/LandingPage';
 import { SignUpPage } from '@/pages/SignUpPage';
@@ -112,6 +113,19 @@ function NotFound() {
 }
 
 function App() {
+  const [showSplash, setShowSplash] = useState(shouldShowSplash);
+
+  if (showSplash) {
+    return (
+      <SplashScreen
+        onDone={() => {
+          markSplashShown();
+          setShowSplash(false);
+        }}
+      />
+    );
+  }
+
   return (
     <AuthProvider>
       <Routes />

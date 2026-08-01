@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from '@/components/Link';
+import { Avatar } from '@/components/Avatar';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from '@/lib/router';
-import { initials } from '@/lib/utils';
 import {
   GraduationCap, Search, Upload, LayoutDashboard, LogOut, User as UserIcon,
   Menu, X, Bookmark, FileStack,
@@ -105,9 +105,7 @@ export function Navbar() {
                 onClick={() => setProfileOpen((v) => !v)}
                 className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1 pr-2 transition hover:border-slate-300 hover:shadow-sm"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 text-xs font-bold text-primary-700">
-                  {initials(profile?.full_name ?? 'S')}
-                </div>
+                <Avatar name={profile?.full_name ?? 'S'} url={profile?.avatar_url} size="sm" />
                 <span className="max-w-[120px] truncate text-sm font-medium text-slate-700">
                   {profile?.full_name?.split(' ')[0] ?? 'Account'}
                 </span>

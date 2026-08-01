@@ -20,3 +20,4 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 export const MATERIALS_BUCKET = 'materials';
+export const AVATARS_BUCKET = 'avatars';

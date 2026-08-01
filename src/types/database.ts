@@ -53,7 +53,7 @@ export interface Material {
 export interface MaterialWithRelations extends Material {
   course?: Pick<Course, 'id' | 'code' | 'title'> | null;
   department?: Pick<Department, 'id' | 'name' | 'code' | 'icon'> | null;
-  uploader?: Pick<Profile, 'id' | 'full_name'> | null;
+  uploader?: Pick<Profile, 'id' | 'full_name' | 'avatar_url'> | null;
 }
 
 export interface Rating {

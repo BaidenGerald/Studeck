@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from '@/components/Link';
 import { Spinner } from '@/components/Spinner';
+import { Avatar } from '@/components/Avatar';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from '@/lib/router';
-import { fetchDepartments, updateProfile } from '@/lib/queries';
-import { formatDate, initials, LEVELS } from '@/lib/utils';
+import { fetchDepartments, updateProfile, uploadAvatar, removeAvatar } from '@/lib/queries';
+import { formatDate, LEVELS } from '@/lib/utils';
 import { getDepartmentIcon } from '@/components/icons';
 import type { Department } from '@/types/database';
 import {
   User as UserIcon, Mail, GraduationCap, BarChart3, Upload,
-  Bookmark, Edit3, Save, X, CheckCircle2, AlertCircle,
+  Bookmark, Edit3, Save, X, CheckCircle2, AlertCircle, Camera, Loader2, Trash2,
 } from 'lucide-react';
 
 export function ProfilePage() {
@@ -22,6 +23,8 @@ export function ProfilePage() {
   const [level, setLevel] = useState(profile?.level ?? '');
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchDepartments().then(setDepartments).catch(console.error);
@@ -46,6 +49,48 @@ export function ProfilePage() {
 
   const dept = departments.find((d) => d.id === profile.department_id);
   const DeptIcon = getDepartmentIcon(dept?.icon);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !user) return;
+    if (!file.type.startsWith('image/')) {
+      setToast({ type: 'error', msg: 'Please choose an image file.' });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setToast({ type: 'error', msg: 'Image must be under 5MB.' });
+      return;
+    }
+    setUploadingAvatar(true);
+    try {
+      await uploadAvatar(user.id, file);
+      await refreshProfile();
+      setToast({ type: 'success', msg: 'Profile picture updated.' });
+    } catch (err) {
+      console.error(err);
+      setToast({ type: 'error', msg: 'Could not upload image.' });
+    } finally {
+      setUploadingAvatar(false);
+      setTimeout(() => setToast(null), 3000);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!user) return;
+    setUploadingAvatar(true);
+    try {
+      await removeAvatar(user.id);
+      await refreshProfile();
+      setToast({ type: 'success', msg: 'Profile picture removed.' });
+    } catch (err) {
+      console.error(err);
+      setToast({ type: 'error', msg: 'Could not remove image.' });
+    } finally {
+      setUploadingAvatar(false);
+      setTimeout(() => setToast(null), 3000);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -83,8 +128,38 @@ export function ProfilePage() {
             <div className="h-28 bg-gradient-to-r from-primary-600 to-secondary-600" />
             <div className="px-6 pb-6">
               <div className="-mt-12 flex items-end justify-between">
-                <div className="flex h-24 w-24 items-center justify-center rounded-2xl border-4 border-white bg-primary-100 text-2xl font-bold text-primary-700 shadow-sm">
-                  {initials(profile.full_name)}
+                <div className="group relative">
+                  <Avatar
+                    name={profile.full_name}
+                    url={profile.avatar_url}
+                    size="lg"
+                    className="border-4 border-white shadow-sm"
+                  />
+                  <button
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                    aria-label="Change profile picture"
+                    className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/0 text-white opacity-0 transition group-hover:bg-black/40 group-hover:opacity-100 disabled:cursor-wait"
+                  >
+                    {uploadingAvatar ? <Loader2 className="h-6 w-6 animate-spin" /> : <Camera className="h-6 w-6" />}
+                  </button>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                  />
+                  {profile.avatar_url && (
+                    <button
+                      onClick={handleRemoveAvatar}
+                      disabled={uploadingAvatar}
+                      title="Remove profile picture"
+                      className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-error-500 text-white shadow-sm hover:bg-error-600"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
                 {!editing ? (
                   <button onClick={() => setEditing(true)} className="btn-secondary">

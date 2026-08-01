@@ -1,4 +1,4 @@
-import { supabase, MATERIALS_BUCKET } from '@/lib/supabase';
+import { supabase, MATERIALS_BUCKET, AVATARS_BUCKET } from '@/lib/supabase';
 import type {
   Department,
   Course,
@@ -39,7 +39,7 @@ export async function fetchAllCourses(): Promise<Course[]> {
 
 // ---- materials ----
 const MATERIAL_RELATIONS =
-  'id, title, description, type, course_id, department_id, level, uploader_id, file_path, file_name, file_type, file_size, tags, download_count, rating_avg, rating_count, created_at, course:courses(id, code, title), department:departments(id, name, code, icon), uploader:profiles!materials_uploader_id_profiles_fkey(id, full_name)';
+  'id, title, description, type, course_id, department_id, level, uploader_id, file_path, file_name, file_type, file_size, tags, download_count, rating_avg, rating_count, created_at, course:courses(id, code, title), department:departments(id, name, code, icon), uploader:profiles!materials_uploader_id_profiles_fkey(id, full_name,  avatar_url)';
 
 export async function fetchMaterialById(id: string): Promise<MaterialWithRelations | null> {
   const { data, error } = await supabase
@@ -390,5 +390,33 @@ export async function updateProfile(
       level: input.level,
     })
     .eq('id', userId);
+  if (error) throw error;
+}
+
+// Uploads a new avatar image, replacing any previous one, and saves the
+// resulting public URL onto the user's profile. Returns the new URL.
+export async function uploadAvatar(userId: string, file: File): Promise<string> {
+  const ext = file.name.split('.').pop() || 'jpg';
+  const path = `${userId}/avatar.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(AVATARS_BUCKET)
+    .upload(path, file, { upsert: true, cacheControl: '3600' });
+  if (uploadError) throw uploadError;
+
+  const { data } = supabase.storage.from(AVATARS_BUCKET).getPublicUrl(path);
+  const avatarUrl = `${data.publicUrl}?v=${Date.now()}`;
+
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({ avatar_url: avatarUrl })
+    .eq('id', userId);
+  if (updateError) throw updateError;
+
+  return avatarUrl;
+}
+
+export async function removeAvatar(userId: string): Promise<void> {
+  const { error } = await supabase.from('profiles').update({ avatar_url: null }).eq('id', userId);
   if (error) throw error;
 }
