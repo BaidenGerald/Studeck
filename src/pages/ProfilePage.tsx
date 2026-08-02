@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 export function ProfilePage() {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, signOut, refreshProfile } = useAuth();
   const { navigate } = useRouter();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [editing, setEditing] = useState(false);
