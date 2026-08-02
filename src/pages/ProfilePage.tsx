@@ -4,17 +4,18 @@ import { Spinner } from '@/components/Spinner';
 import { Avatar } from '@/components/Avatar';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from '@/lib/router';
-import { fetchDepartments, updateProfile, uploadAvatar, removeAvatar } from '@/lib/queries';
+import { fetchDepartments, updateProfile, uploadAvatar, removeAvatar, deleteAccount } from '@/lib/queries';
 import { formatDate, LEVELS } from '@/lib/utils';
 import { getDepartmentIcon } from '@/components/icons';
 import type { Department } from '@/types/database';
 import {
   User as UserIcon, Mail, GraduationCap, BarChart3, Upload,
-  Bookmark, Edit3, Save, X, CheckCircle2, AlertCircle, Camera, Loader2, Trash2,
+  Bookmark, Edit3, Save, X, CheckCircle2, AlertCircle, Camera, Loader2, Trash2, AlertTriangle,
 } from 'lucide-react';
 
 export function ProfilePage() {
   const { user, profile, refreshProfile } = useAuth();
+  const { navigate } = useRouter();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [editing, setEditing] = useState(false);
   const [fullName, setFullName] = useState(profile?.full_name ?? '');
@@ -23,8 +24,11 @@ export function ProfilePage() {
   const [level, setLevel] = useState(profile?.level ?? '');
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+ const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   useEffect(() => {
     fetchDepartments().then(setDepartments).catch(console.error);
@@ -92,6 +96,20 @@ export function ProfilePage() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    setDeletingAccount(true);
+    try {
+      await deleteAccount();
+      await signOut();
+      navigate('/');
+    } catch (err) {
+      console.error(err);
+      setDeletingAccount(false);
+      setToast({ type: 'error', msg: 'Could not delete account. Please try again.' });
+      setTimeout(() => setToast(null), 4000);
+    }
+  };
+  
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -275,8 +293,66 @@ export function ProfilePage() {
               </div>
             </dl>
           </div>
+
+          {/* Danger zone */}
+          <div className="card border-error-100 bg-error-50/50 p-6">
+            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-error-700">
+              <AlertTriangle className="h-4 w-4" /> Danger zone
+            </h3>
+            <p className="text-xs text-error-700/80">
+              Permanently delete your account, including everything you've uploaded, rated, or favorited. This cannot be undone.
+            </p>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="mt-3 w-full rounded-xl border border-error-300 bg-white px-4 py-2 text-sm font-semibold text-error-600 transition hover:bg-error-100"
+            >
+              Delete my account
+            </button>
+          </div>
         </div>
       </div>
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/50 p-4 animate-fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl animate-scale-in">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-error-50 text-error-600">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <h2 className="mt-4 text-lg font-bold text-slate-900">Delete your account?</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              This permanently deletes your profile, every material you've uploaded, and your ratings and favorites.
+              Other students will no longer see anything you shared. This can't be undone.
+            </p>
+            <p className="mt-4 text-sm font-medium text-slate-700">
+              Type <span className="font-bold">delete</span> to confirm.
+            </p>
+            <input
+              className="input mt-2"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="delete"
+              autoFocus
+            />
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); }}
+                disabled={deletingAccount}
+                className="btn-ghost flex-1 justify-center"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText.trim().toLowerCase() !== 'delete' || deletingAccount}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-error-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-error-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {deletingAccount ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                {deletingAccount ? 'Deleting…' : 'Delete permanently'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 animate-slide-down">

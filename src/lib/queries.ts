@@ -420,3 +420,22 @@ export async function removeAvatar(userId: string): Promise<void> {
   const { error } = await supabase.from('profiles').update({ avatar_url: null }).eq('id', userId);
   if (error) throw error;
 }
+// Permanently deletes the current user's account and everything they own
+// (uploads, avatar, ratings, favorites). Requires a live session — the edge
+// function verifies identity itself from the access token, it never trusts
+// a client-supplied user id.
+export async function deleteAccount(): Promise<void> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+  if (!token) throw new Error('You must be signed in.');
+
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || 'Could not delete account.');
+  }
+}
