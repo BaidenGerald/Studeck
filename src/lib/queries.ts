@@ -39,7 +39,7 @@ export async function fetchAllCourses(): Promise<Course[]> {
 
 // ---- materials ----
 const MATERIAL_RELATIONS =
-  'id, title, description, type, course_id, department_id, level, uploader_id, file_path, file_name, file_type, file_size, tags, download_count, rating_avg, rating_count, created_at, course:courses(id, code, title), department:departments(id, name, code, icon), uploader:profiles!materials_uploader_id_profiles_fkey(id, full_name,  avatar_url)';
+  'id, title, description, type, course_id, department_id, level, uploader_id, file_path, file_name, file_type, file_size, tags, download_count, rating_avg, rating_count, summary, quiz, created_at, course:courses(id, code, title), department:departments(id, name, code, icon), uploader:profiles!materials_uploader_id_profiles_fkey(id, full_name,  avatar_url)';
 
 export async function fetchMaterialById(id: string): Promise<MaterialWithRelations | null> {
   const { data, error } = await supabase
@@ -424,6 +424,30 @@ export async function removeAvatar(userId: string): Promise<void> {
 // (uploads, avatar, ratings, favorites). Requires a live session — the edge
 // function verifies identity itself from the access token, it never trusts
 // a client-supplied user id.
+export async function summarizeMaterial(materialId: string): Promise<{ summary: string; basedOnFullText?: boolean }> {
+  return callAiStudyTools(materialId, 'summary');
+}
+
+export async function generateQuiz(materialId: string): Promise<{ quiz: { question: string; answer: string }[]; basedOnFullText?: boolean }> {
+  return callAiStudyTools(materialId, 'quiz');
+}
+
+async function callAiStudyTools(materialId: string, mode: 'summary' | 'quiz'): Promise<any> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+  if (!token) throw new Error('You must be signed in.');
+
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-study-tools`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ materialId, mode }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error || `Could not generate ${mode}.`);
+  return json;
+}
+
 export async function deleteAccount(): Promise<void> {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token;

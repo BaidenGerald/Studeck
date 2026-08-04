@@ -47,6 +47,8 @@ export interface Material {
   download_count: number;
   rating_avg: number;
   rating_count: number;
+  summary: string | null;
+  quiz: { question: string; answer: string }[] | null;
   created_at: string;
 }
 
