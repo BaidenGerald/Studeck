@@ -1,5 +1,5 @@
 import {
-  Laptop, Sigma, Atom, FlaskConical, Dna, TrendingUp, Scale, Stethoscope,
+  Laptop, Sigma, Atom, FlaskConical, Dna, TrendingUp, Scale, Stethoscope, Cog,
   FileText, HelpCircle, BookOpen, Presentation, ListChecks,
   type LucideIcon,
 } from 'lucide-react';
@@ -15,6 +15,7 @@ const DEPARTMENT_ICONS: Record<string, LucideIcon> = {
   TrendingUp,
   Scale,
   Stethoscope,
+  Cog,
 };
 
 export function getDepartmentIcon(name?: string | null): LucideIcon {

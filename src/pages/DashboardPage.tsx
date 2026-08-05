@@ -99,23 +99,34 @@ export function DashboardPage() {
             </div>
 
             {recommendations.length > 0 ? (
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {recommendations.map((m) => (
-                  <MaterialCard key={m.id} material={m} reason={m.reason} />
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                icon={<Sparkles className="h-7 w-7" />}
-                title="No recommendations yet"
-                description="Download a few materials and our AI will start suggesting resources matched to your courses and interests."
-                action={
-                  <Link to="/browse" className="btn-primary">
-                    Browse the library <ArrowRight className="h-4 w-4" />
-                  </Link>
-                }
-              />
-            )}
+           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {recommendations.map((m) => (
+          <MaterialCard key={m.id} material={m} reason={m.reason} />
+         ))}
+         </div>
+         ) : recent.length > 0 ? (
+          <div>
+          <p className="mb-4 text-sm text-slate-500">
+          Recommendations get more personalized as you download materials — here's what's new on StuDeck in the meantime.
+          </p>
+           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+           {recent.slice(0, 6).map((m) => (
+           <MaterialCard key={m.id} material={m} />
+         ))}
+           </div>
+            </div>
+         ) : (
+             <EmptyState
+             icon={<Sparkles className="h-7 w-7" />}
+             title="No recommendations yet"
+             description="Download a few materials and our AI will start suggesting resources matched to your courses and interests."
+              action={
+              <Link to="/browse" className="btn-primary">
+              Browse the library <ArrowRight className="h-4 w-4" />
+             </Link>
+            }
+          />
+         )}
           </section>
 
           {/* Recent uploads */}
